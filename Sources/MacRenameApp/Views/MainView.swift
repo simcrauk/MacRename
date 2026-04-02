@@ -30,7 +30,8 @@ struct MainView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
         }
-        .frame(minWidth: 700, minHeight: 500)
+        .navigationTitle("MacRename")
+        .frame(minWidth: 700, idealWidth: 900, minHeight: 500, idealHeight: 650)
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             handleDrop(providers)
             return true

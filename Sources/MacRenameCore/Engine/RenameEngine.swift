@@ -51,6 +51,51 @@ public final class RenameEngine: @unchecked Sendable {
 
             await processItem(item, enumIndex: &enumIndex)
         }
+
+        // Post-processing: detect duplicate new names within the same directory
+        detectDuplicates()
+    }
+
+    /// Marks items as `.nameAlreadyExists` if multiple items in the same
+    /// directory would end up with the same new name.
+    private func detectDuplicates() {
+        // Group items by parent directory
+        var byDirectory: [String: [RenameItem]] = [:]
+        for item in items where item.status == .shouldRename {
+            let dir = item.parentPath
+            byDirectory[dir, default: []].append(item)
+        }
+
+        for (_, dirItems) in byDirectory {
+            var seen: [String: Int] = [:]
+            // Also count existing files that aren't being renamed
+            for item in items where item.status != .shouldRename && !item.isSelected {
+                seen[item.originalName, default: 0] += 1
+            }
+
+            for item in dirItems {
+                guard let newName = item.newName else { continue }
+                let key = newName.lowercased() // macOS filesystem is case-insensitive by default
+                seen[key, default: 0] += 1
+                if seen[key]! > 1 {
+                    item.status = .nameAlreadyExists
+                }
+            }
+
+            // Second pass: mark the first occurrence too if duplicates exist
+            var counts: [String: Int] = [:]
+            for item in dirItems {
+                guard let newName = item.newName else { continue }
+                let key = newName.lowercased()
+                counts[key, default: 0] += 1
+            }
+            for item in dirItems where item.status == .shouldRename {
+                guard let newName = item.newName else { continue }
+                if (counts[newName.lowercased()] ?? 0) > 1 {
+                    item.status = .nameAlreadyExists
+                }
+            }
+        }
     }
 
     /// Processes a single item through the full rename pipeline.
@@ -145,32 +190,14 @@ public final class RenameEngine: @unchecked Sendable {
     // MARK: - File Operations
 
     /// Executes the rename operation on all items with status `.shouldRename`.
-    /// Renames depth-first (deepest items first) to avoid path invalidation.
+    /// Uses `FileRenamer` for atomic operations with automatic rollback on failure.
     public func executeRename() async throws -> [RenamePair] {
-        let toRename = items
-            .filter { $0.status == .shouldRename && $0.newName != nil }
-            .sorted { $0.depth > $1.depth } // Deepest first
-
-        var completed: [RenamePair] = []
-
-        for item in toRename {
-            guard let newName = item.newName else { continue }
-            let sourceURL = item.url
-            let destURL = sourceURL.deletingLastPathComponent().appendingPathComponent(newName)
-
-            try FileManager.default.moveItem(at: sourceURL, to: destURL)
-            completed.append(RenamePair(source: sourceURL, destination: destURL))
-        }
-
-        return completed
+        try FileRenamer.execute(items: items)
     }
 
     /// Undoes a set of renames by reversing each pair.
     public func undoRenames(_ pairs: [RenamePair]) throws {
-        // Undo in reverse order (shallowest first, since we renamed deepest first)
-        for pair in pairs.reversed() {
-            try FileManager.default.moveItem(at: pair.destination, to: pair.source)
-        }
+        try FileRenamer.undo(pairs)
     }
 
     // MARK: - Helpers

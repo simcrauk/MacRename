@@ -23,7 +23,8 @@ let package = Package(
         .executableTarget(
             name: "MacRenameApp",
             dependencies: ["MacRenameCore"],
-            path: "Sources/MacRenameApp"
+            path: "Sources/MacRenameApp",
+            exclude: ["Info.plist"]
         ),
         .executableTarget(
             name: "MacRenameCLI",
