@@ -127,4 +127,6 @@ the Services-menu path is the reliable one.
 - Behavioural reference: Microsoft PowerToys' PowerRename
   (`src/modules/powerrename/lib/`)
 
-© 2026 Simon Craig.
+## Licence
+
+[MIT](LICENSE) — © 2026 Simon Craig.
