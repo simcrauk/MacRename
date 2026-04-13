@@ -58,7 +58,13 @@ struct OptionsPanel: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Tokens").font(.caption).foregroundStyle(.secondary)
                     Toggle("Enumerate", isOn: $viewModel.enumerate)
+                        .help("Enable ${start=N,padding=N} counters")
                     Toggle("Randomize", isOn: $viewModel.randomize)
+                        .help("Enable ${rstring…} and ${ruuidv4} tokens")
+                    Toggle("EXIF metadata", isOn: $viewModel.metadataEXIF)
+                        .help("Enable $CAMERA_MAKE, $ISO, $DATE_TAKEN_* tokens for image files")
+                    Toggle("XMP / IPTC metadata", isOn: $viewModel.metadataXMP)
+                        .help("Enable $CREATOR, $TITLE, $CREATE_DATE_* tokens")
 
                     Text("Time source").font(.caption).foregroundStyle(.secondary)
                         .padding(.top, 4)

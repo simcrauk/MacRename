@@ -9,6 +9,8 @@ DerivedData/
 PowerToys/
 APP_STORE.md
 .vscode/
+Resources/app-store-copy.md
+Resources/screenshots/
 *.xcodeproj
 *.xcworkspace
 !.swiftpm/**/*.xcworkspace
