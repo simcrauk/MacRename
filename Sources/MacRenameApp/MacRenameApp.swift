@@ -3,6 +3,7 @@ import AppKit
 
 @main
 struct MacRenameApp: App {
+    @Environment(\.openWindow) private var openWindow
     @State private var viewModel = AppViewModel()
 
     init() {
@@ -44,7 +45,18 @@ struct MacRenameApp: App {
                 }
                 .keyboardShortcut("d", modifiers: [.command, .shift])
             }
+            CommandGroup(replacing: .help) {
+                Button("MacRename Help") {
+                    openWindow(id: "help")
+                }
+                .keyboardShortcut("?", modifiers: .command)
+            }
         }
+
+        Window("MacRename Help", id: "help") {
+            HelpView()
+        }
+        .defaultSize(width: 780, height: 560)
     }
 
     private func aboutPanelOptions() -> [NSApplication.AboutPanelOptionKey: Any] {
