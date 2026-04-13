@@ -5,12 +5,19 @@ import AppKit
 struct MacRenameApp: App {
     @Environment(\.openWindow) private var openWindow
     @State private var viewModel = AppViewModel()
+    private let serviceProvider = ServiceProvider()
 
     init() {
         // SPM executables don't auto-activate as foreground apps,
         // so the window won't receive keyboard focus without this.
         NSApplication.shared.setActivationPolicy(.regular)
         NSApplication.shared.activate()
+
+        // Register the Services-menu provider. The Info.plist NSServices
+        // declaration tells macOS what to advertise; this tells macOS where
+        // to dispatch the call when the user picks our menu item.
+        NSApp.servicesProvider = serviceProvider
+        NSUpdateDynamicServices()
     }
 
     var body: some Scene {
@@ -19,6 +26,11 @@ struct MacRenameApp: App {
                 .onOpenURL { url in
                     if let files = URLSchemeHandler.parseURLScheme(url) {
                         viewModel.addFiles(urls: files)
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .macRenameAddFiles)) { note in
+                    if let urls = note.userInfo?["urls"] as? [URL] {
+                        viewModel.addFiles(urls: urls)
                     }
                 }
         }

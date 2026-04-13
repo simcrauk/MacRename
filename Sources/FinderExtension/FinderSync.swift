@@ -1,5 +1,8 @@
 import Cocoa
 import FinderSync
+import os.log
+
+private let log = OSLog(subsystem: "com.macrename.app.finder-extension", category: "FinderSync")
 
 class FinderSyncExtension: FIFinderSync {
 
@@ -7,11 +10,13 @@ class FinderSyncExtension: FIFinderSync {
         super.init()
         // Monitor all volumes so the context menu appears everywhere
         FIFinderSyncController.default().directoryURLs = [URL(fileURLWithPath: "/")]
+        os_log("FinderSyncExtension init — monitoring /", log: log, type: .info)
     }
 
     // MARK: - Context Menu
 
     override func menu(for menuKind: FIMenuKind) -> NSMenu? {
+        os_log("menu(for: %{public}d) called", log: log, type: .info, menuKind.rawValue)
         guard menuKind == .contextualMenuForItems else { return nil }
 
         let menu = NSMenu(title: "MacRename")

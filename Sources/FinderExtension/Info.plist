@@ -31,5 +31,7 @@
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).FinderSyncExtension</string>
     </dict>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
 </dict>
 </plist>
