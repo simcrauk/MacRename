@@ -16,11 +16,14 @@
         h1 { font-size: 2rem; margin: 0 0 0.25rem; }
         h2 { font-size: 1.15rem; margin-top: 2rem; }
         p, li { margin: 0.6rem 0; }
-        code { font: 14px/1 ui-monospace, "SF Mono", Menlo, monospace; background: #eee; padding: 1px 5px; border-radius: 3px; }
+        code { font: 14px/1 ui-monospace, "SF Mono", Menlo, monospace; background: #eee; color: #222; padding: 1px 5px; border-radius: 3px; }
         .lead { color: #666; }
-        @media (prefers-color-scheme: dark) { .lead { color: #999; } }
         .meta { color: #888; font-size: 0.85rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; }
-        @media (prefers-color-scheme: dark) { .meta { border-color: #2a2a2d; } }
+        @media (prefers-color-scheme: dark) {
+            .lead { color: #999; }
+            .meta { border-color: #2a2a2d; }
+            code { background: #1f1f23; color: #e6e6e6; border: 1px solid #2a2a2d; }
+        }
     </style>
 </head>
 <body>
