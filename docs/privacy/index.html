@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MacRename · Privacy Policy</title>
+    <style>
+        :root { color-scheme: light dark; }
+        html { font: 16px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+        body { max-width: 720px; margin: 3rem auto; padding: 0 1.25rem; color: #222; background: #fafafa; }
+        @media (prefers-color-scheme: dark) {
+            body { color: #e6e6e6; background: #0e0e10; }
+            a { color: #7ea6ff; }
+            code { background: #1a1a1d; }
+        }
+        h1 { font-size: 2rem; margin: 0 0 0.25rem; }
+        h2 { font-size: 1.15rem; margin-top: 2rem; }
+        p, li { margin: 0.6rem 0; }
+        code { font: 14px/1 ui-monospace, "SF Mono", Menlo, monospace; background: #eee; padding: 1px 5px; border-radius: 3px; }
+        .lead { color: #666; }
+        @media (prefers-color-scheme: dark) { .lead { color: #999; } }
+        .meta { color: #888; font-size: 0.85rem; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; }
+        @media (prefers-color-scheme: dark) { .meta { border-color: #2a2a2d; } }
+    </style>
+</head>
+<body>
+
+<h1>MacRename Privacy Policy</h1>
+<p class="lead">Short version: MacRename does not collect anything.</p>
+
+<h2>What we collect</h2>
+<p>Nothing. MacRename has no analytics, no crash reporting, no telemetry, and no user accounts.</p>
+
+<h2>Network access</h2>
+<p>MacRename does not make any network connections. The app is fully offline. It does not phone home, check for updates, sync to a cloud service, or contact any server we control or any third party.</p>
+
+<h2>Files on your Mac</h2>
+<p>MacRename reads and renames files and folders that you explicitly drag into the window, pick through the Open panel, or send to it via Finder's right-click menu. Filenames, paths, and image metadata (EXIF / XMP) read from those files are used solely to compute the rename preview shown to you, and never leave your computer.</p>
+<p>The app runs in the macOS App Sandbox and only ever touches the files and folders you have granted it access to during the current session.</p>
+
+<h2>Settings</h2>
+<p>The following preferences are stored locally in macOS user defaults, scoped to MacRename's own container:</p>
+<ul>
+    <li>Your last search and replace terms (so they are pre-filled when you reopen the app)</li>
+    <li>A list of recently used search and replace terms for the quick-pick menu</li>
+    <li>Toggle states from the Options panel</li>
+</ul>
+<p>These never leave your Mac. You can clear them by deleting the app's preferences via <code>defaults delete com.macrename.app</code> in Terminal, or by removing the app entirely.</p>
+
+<h2>Children</h2>
+<p>MacRename is suitable for all ages and does not knowingly collect any information from anyone, including children under 13.</p>
+
+<h2>Changes to this policy</h2>
+<p>If this policy ever changes, the new version will appear at this URL. Material changes will also be noted in the app's release notes.</p>
+
+<h2>Contact</h2>
+<p>Questions or concerns about privacy can be sent to the maintainer via the project's GitHub issues page.</p>
+
+<p class="meta">
+    Last updated: 13 April 2026 · MacRename is © 2026 Simon Craig.<br>
+    Source code:
+    <a href="https://github.com/">github</a> ·
+    <a href="../">project home</a>
+</p>
+
+</body>
+</html>
