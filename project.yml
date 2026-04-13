@@ -30,6 +30,8 @@ targets:
           - Info.plist
       - path: Resources/AppIcon.icns
         buildPhase: resources
+      - path: Sources/MacRenameApp/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MacRenameCore
         product: MacRenameCore

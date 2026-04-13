@@ -106,7 +106,7 @@ struct MacRenameApp: App {
 
         return [
             .applicationName: "MacRename",
-            .applicationVersion: "0.1.0",
+            .applicationVersion: "1.0.0",
             .credits: credits,
             .init(rawValue: "Copyright"): "© 2026 Simon Craig",
         ]

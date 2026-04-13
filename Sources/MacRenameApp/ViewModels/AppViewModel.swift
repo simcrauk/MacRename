@@ -71,9 +71,56 @@ final class AppViewModel {
 
     // MARK: - File Management
 
+    /// Folders the user has granted us access to during this session, kept
+    /// alive so security-scoped access stays in effect for renames.
+    private var grantedFolderURLs: Set<URL> = []
+
     func addFiles(urls: [URL]) {
+        ensureRenameAccess(for: urls)
         engine.addItems(urls: urls, recursive: !excludeSubfolders)
         schedulePreview()
+    }
+
+    /// Sandbox grants `read-write` on individually-picked files but rename
+    /// is technically `create new entry in parent`, which needs the parent
+    /// directory to be in scope. When the user supplies bare files, walk
+    /// their parents and ask once per directory.
+    private func ensureRenameAccess(for urls: [URL]) {
+        let fm = FileManager.default
+        var parentsToRequest: [URL] = []
+        var seen: Set<String> = []
+
+        for url in urls {
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { continue }
+            if isDir.boolValue { continue }   // folder grants cover their contents
+            let parent = url.deletingLastPathComponent().standardizedFileURL
+            if grantedFolderURLs.contains(parent) { continue }
+            if seen.insert(parent.path).inserted {
+                parentsToRequest.append(parent)
+            }
+        }
+
+        for parent in parentsToRequest {
+            if let granted = requestFolderAccess(for: parent) {
+                _ = granted.startAccessingSecurityScopedResource()
+                grantedFolderURLs.insert(granted)
+            }
+        }
+    }
+
+    private func requestFolderAccess(for folder: URL) -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = folder
+        panel.message = "MacRename needs permission to rename files inside “\(folder.lastPathComponent)”. Click Grant Access to allow."
+        panel.prompt = "Grant Access"
+        panel.title = "Grant folder access"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return url
     }
 
     func clearFiles() {
@@ -81,6 +128,11 @@ final class AppViewModel {
         renameCompleted = false
         lastRenamePairs = []
         errorMessage = nil
+        // Release any folder grants — fresh session, fresh consent.
+        for url in grantedFolderURLs {
+            url.stopAccessingSecurityScopedResource()
+        }
+        grantedFolderURLs.removeAll()
     }
 
     /// Toggle whether an item participates in the rename. Re-runs the preview
@@ -95,7 +147,7 @@ final class AppViewModel {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = "Select files or folders to rename"
+        panel.message = "Select files or folders to rename. Choosing a folder is recommended — it grants the access MacRename needs to rename items inside it."
 
         if panel.runModal() == .OK {
             addFiles(urls: panel.urls)
