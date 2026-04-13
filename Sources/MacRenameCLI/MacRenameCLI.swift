@@ -3,7 +3,7 @@ import Foundation
 import MacRenameCore
 
 @main
-struct MacRenameCLI: ParsableCommand {
+struct MacRenameCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "macrename",
         abstract: "Bulk file renaming tool for macOS",
@@ -20,7 +20,7 @@ struct CommonOptions: ParsableArguments {
     @Option(name: .shortAndLong, help: "Replacement string")
     var replace: String = ""
 
-    @Flag(name: .shortAndLong, help: "Use regular expressions")
+    @Flag(name: .long, help: "Use regular expressions")
     var regex: Bool = false
 
     @Flag(name: .long, help: "Case-sensitive matching")
@@ -47,6 +47,21 @@ struct CommonOptions: ParsableArguments {
     @Flag(name: .long, help: "Convert to Capitalized")
     var capitalized: Bool = false
 
+    @Flag(name: .long, help: "Enable ${start=,increment=,padding=} enumeration tokens")
+    var enumerate: Bool = false
+
+    @Flag(name: .long, help: "Enable ${rstringalnum=N}, ${ruuidv4} random tokens")
+    var randomize: Bool = false
+
+    @Flag(name: .long, help: "Use file creation time for $YYYY-style date tokens")
+    var creationTime: Bool = false
+
+    @Flag(name: .long, help: "Use file modification time for $YYYY-style date tokens")
+    var modificationTime: Bool = false
+
+    @Flag(name: .long, help: "Use file access time for $YYYY-style date tokens")
+    var accessTime: Bool = false
+
     @Flag(name: .long, help: "Exclude files (only rename folders)")
     var excludeFiles: Bool = false
 
@@ -70,6 +85,11 @@ struct CommonOptions: ParsableArguments {
         if lowercase { f.insert(.lowercase) }
         if titlecase { f.insert(.titlecase) }
         if capitalized { f.insert(.capitalized) }
+        if enumerate { f.insert(.enumerate) }
+        if randomize { f.insert(.randomize) }
+        if creationTime { f.insert(.creationTime) }
+        if modificationTime { f.insert(.modificationTime) }
+        if accessTime { f.insert(.accessTime) }
         if excludeFiles { f.insert(.excludeFiles) }
         if excludeFolders { f.insert(.excludeFolders) }
         if noRecurse { f.insert(.excludeSubfolders) }

@@ -1,8 +1,16 @@
 import SwiftUI
+import AppKit
 
 @main
 struct MacRenameApp: App {
     @State private var viewModel = AppViewModel()
+
+    init() {
+        // SPM executables don't auto-activate as foreground apps,
+        // so the window won't receive keyboard focus without this.
+        NSApplication.shared.setActivationPolicy(.regular)
+        NSApplication.shared.activate()
+    }
 
     var body: some Scene {
         WindowGroup {

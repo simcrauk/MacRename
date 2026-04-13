@@ -22,9 +22,14 @@ public enum FileRenamer {
             let sourceURL = item.url
             let destURL = sourceURL.deletingLastPathComponent().appendingPathComponent(newName)
 
-            // Check destination doesn't already exist
-            if fm.fileExists(atPath: destURL.path) {
-                // Rollback everything done so far
+            // On case-insensitive volumes (default APFS/HFS+), a rename that only
+            // changes case reports "already exists" because the source and destination
+            // resolve to the same inode. Detect this and do a two-step rename via a
+            // temp name in the same directory.
+            let isCaseOnlyRename = sourceURL.lastPathComponent != newName
+                && sourceURL.lastPathComponent.lowercased() == newName.lowercased()
+
+            if !isCaseOnlyRename && fm.fileExists(atPath: destURL.path) {
                 rollback(completed)
                 throw RenameError.destinationExists(
                     source: sourceURL.lastPathComponent,
@@ -33,7 +38,14 @@ public enum FileRenamer {
             }
 
             do {
-                try fm.moveItem(at: sourceURL, to: destURL)
+                if isCaseOnlyRename {
+                    let tempURL = sourceURL.deletingLastPathComponent()
+                        .appendingPathComponent(".macrename-\(UUID().uuidString)")
+                    try fm.moveItem(at: sourceURL, to: tempURL)
+                    try fm.moveItem(at: tempURL, to: destURL)
+                } else {
+                    try fm.moveItem(at: sourceURL, to: destURL)
+                }
                 completed.append(RenamePair(source: sourceURL, destination: destURL))
             } catch {
                 // Rollback everything done so far

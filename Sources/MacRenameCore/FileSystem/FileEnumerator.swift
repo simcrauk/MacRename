@@ -32,7 +32,7 @@ public enum FileEnumerator {
                         baseDepth: 1,
                         fileManager: fm
                     )
-                    items.append(contentsOf: children)
+                    items.append(contentsOf: sorted(children))
                 }
             } else {
                 let fileItem = RenameItem(url: standardized, isFolder: false, depth: 0)
@@ -41,6 +41,19 @@ public enum FileEnumerator {
         }
 
         return items
+    }
+
+    /// Stable sort matching the documented contract: folders first (for
+    /// depth-first rename safety), then files, alphabetical within each group
+    /// at each directory level.
+    private static func sorted(_ items: [RenameItem]) -> [RenameItem] {
+        items.sorted { lhs, rhs in
+            let lhsParent = lhs.url.deletingLastPathComponent().path
+            let rhsParent = rhs.url.deletingLastPathComponent().path
+            if lhsParent != rhsParent { return lhsParent < rhsParent }
+            if lhs.isFolder != rhs.isFolder { return lhs.isFolder && !rhs.isFolder }
+            return lhs.url.lastPathComponent.localizedStandardCompare(rhs.url.lastPathComponent) == .orderedAscending
+        }
     }
 
     private static func enumerateDirectory(
