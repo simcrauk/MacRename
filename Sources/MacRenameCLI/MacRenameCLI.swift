@@ -62,6 +62,12 @@ struct CommonOptions: ParsableArguments {
     @Flag(name: .long, help: "Use file access time for $YYYY-style date tokens")
     var accessTime: Bool = false
 
+    @Flag(name: .long, help: "Enable EXIF metadata tokens ($CAMERA_MAKE, $ISO, $DATE_TAKEN_*, etc.)")
+    var exif: Bool = false
+
+    @Flag(name: .long, help: "Enable XMP/IPTC metadata tokens ($CREATOR, $TITLE, $CREATE_DATE_*, etc.)")
+    var xmp: Bool = false
+
     @Flag(name: .long, help: "Exclude files (only rename folders)")
     var excludeFiles: Bool = false
 
@@ -90,6 +96,8 @@ struct CommonOptions: ParsableArguments {
         if creationTime { f.insert(.creationTime) }
         if modificationTime { f.insert(.modificationTime) }
         if accessTime { f.insert(.accessTime) }
+        if exif { f.insert(.metadataEXIF) }
+        if xmp { f.insert(.metadataXMP) }
         if excludeFiles { f.insert(.excludeFiles) }
         if excludeFolders { f.insert(.excludeFolders) }
         if noRecurse { f.insert(.excludeSubfolders) }

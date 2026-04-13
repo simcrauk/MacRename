@@ -168,6 +168,42 @@ run_stdout_match "datetime YYYY-MM-DD (modification-time)" random \
   -- preview --modification-time -s 'r1' -r '$YYYY-$MM-$DD' "{DIR}/r1.txt"
 
 echo
+echo "=== EXIF metadata tokens ==="
+run_tree "rename from EXIF tokens (make + date + iso)" images \
+$'Canon-20240315-ISO400.jpg\nNikon-20231122-ISO800.jpg' \
+  -- rename --exif --regex --name-only -s '.+' \
+            -r '$CAMERA_MAKE-$DATE_TAKEN_YYYY$DATE_TAKEN_MM$DATE_TAKEN_DD-ISO$ISO' \
+            "{DIR}/*.jpg"
+
+run_stdout_match "preview surfaces camera model" images \
+  'IMG_0001\.jpg → EOS 5D\.jpg' \
+  -- preview --exif --regex --name-only -s '.+' -r '$CAMERA_MODEL' "{DIR}/IMG_0001.jpg"
+
+run_stdout_match "unknown token left as-is when EXIF flag off" images \
+  '\$CAMERA_MAKE' \
+  -- preview --regex --name-only -s '.+' -r '$CAMERA_MAKE' "{DIR}/IMG_0001.jpg"
+
+echo
+echo "=== Unicode normalization ==="
+# macOS older HFS+ volumes return NFD filenames; ensure an NFC search term
+# still matches a file whose name is stored in NFD.
+{
+  unicode_tmp="$(mktemp -d)"
+  # NFD "café.txt" = "cafe" + U+0301 (combining acute) + ".txt"
+  nfd_name="$(printf 'cafe\xcc\x81.txt')"
+  touch "$unicode_tmp/$nfd_name"
+  "$CLI" rename -s 'é' -r 'É' "$unicode_tmp/$nfd_name" >/dev/null 2>&1 || true
+  if (cd "$unicode_tmp" && ls | iconv -f utf-8-mac -t utf-8) | grep -q 'cafÉ'; then
+    echo "  ✓ NFD filename matches NFC search term"; PASS=$((PASS+1))
+  else
+    echo "  ✗ NFD filename matches NFC search term"
+    echo "      files: $(cd "$unicode_tmp" && ls | iconv -f utf-8-mac -t utf-8)"
+    FAIL=$((FAIL+1)); FAILED+=("NFD/NFC unicode normalization")
+  fi
+  rm -rf "$unicode_tmp"
+}
+
+echo
 echo "=== Validation errors (preview only) ==="
 run_stdout_match "invalid character / rejected" invalid \
   'invalid characters' \

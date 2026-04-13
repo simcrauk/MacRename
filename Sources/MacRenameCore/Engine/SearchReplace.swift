@@ -29,6 +29,18 @@ public enum SearchReplace {
             return Result(output: nil, matched: false)
         }
 
+        // Normalize to NFC so NFD filenames from older HFS+ volumes match
+        // NFC search terms typed by the user. Also fold common non-breaking
+        // whitespace (U+00A0) to regular space, matching PowerRename behavior
+        // so a copy-pasted NBSP in either side doesn't silently miss matches.
+        let source = source
+            .precomposedStringWithCanonicalMapping
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+        let searchTerm = searchTerm
+            .precomposedStringWithCanonicalMapping
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+        let replaceTerm = replaceTerm.precomposedStringWithCanonicalMapping
+
         if flags.contains(.useRegex) {
             return regexReplace(
                 in: source,
@@ -81,17 +93,20 @@ public enum SearchReplace {
                 withTemplate: replacement
             )
         } else {
-            // Replace only the first match
+            // Replace only the first match. We can't use `replaceMatches(in:range:)`
+            // here because it iterates every match inside the given range — so a
+            // pattern like `(.*)` would also hit the zero-width match after the
+            // last character and produce a doubled replacement.
             guard let firstMatch = regex.firstMatch(in: source, range: range) else {
                 return Result(output: nil, matched: false)
             }
-            let mutableSource = NSMutableString(string: source)
-            regex.replaceMatches(
-                in: mutableSource,
-                range: firstMatch.range,
-                withTemplate: replacement
+            let expanded = regex.replacementString(
+                for: firstMatch,
+                in: source,
+                offset: 0,
+                template: replacement
             )
-            result = mutableSource as String
+            result = (source as NSString).replacingCharacters(in: firstMatch.range, with: expanded)
         }
 
         return Result(output: result, matched: true)

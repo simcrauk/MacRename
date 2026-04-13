@@ -12,6 +12,7 @@ struct FileListView: View {
                     set: { item.isSelected = $0 }
                 ))
                 .labelsHidden()
+                .accessibilityLabel("Include \(item.originalName)")
             }
             .width(24)
 
@@ -20,10 +21,12 @@ struct FileListView: View {
                     Image(systemName: item.isFolder ? "folder.fill" : "doc.fill")
                         .foregroundStyle(item.isFolder ? .blue : .secondary)
                         .font(.system(size: 11))
+                        .accessibilityHidden(true)
                     Text(item.originalName)
                         .lineLimit(1)
                 }
                 .padding(.leading, CGFloat(item.depth) * 16)
+                .accessibilityLabel("\(item.isFolder ? "Folder" : "File"): \(item.originalName)")
             }
 
             TableColumn("New Name") { item in
@@ -46,9 +49,11 @@ struct FileRowNewName: View {
             Text(newName)
                 .lineLimit(1)
                 .foregroundColor(item.status == .shouldRename ? .primary : .red)
+                .accessibilityLabel("New name: \(newName)")
         } else {
             Text("—")
                 .foregroundStyle(.quaternary)
+                .accessibilityLabel("No change")
         }
     }
 }

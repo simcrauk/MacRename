@@ -6,12 +6,19 @@ import UniformTypeIdentifiers
 @MainActor
 final class AppViewModel {
     let engine = RenameEngine()
+    let settings: AppSettings
 
-    var searchTerm: String = "" {
-        didSet { schedulePreview() }
+    var searchTerm: String {
+        didSet {
+            if settings.persistState { settings.lastSearchTerm = searchTerm }
+            schedulePreview()
+        }
     }
-    var replaceTerm: String = "" {
-        didSet { schedulePreview() }
+    var replaceTerm: String {
+        didSet {
+            if settings.persistState { settings.lastReplaceTerm = replaceTerm }
+            schedulePreview()
+        }
     }
 
     // Search options
@@ -47,6 +54,16 @@ final class AppViewModel {
     var errorMessage: String?
 
     private var previewTask: Task<Void, Never>?
+
+    init(settings: AppSettings = AppSettings()) {
+        self.settings = settings
+        // Default to persisting on first launch; users can later opt out.
+        if UserDefaults.standard.object(forKey: "persistState") == nil {
+            settings.persistState = true
+        }
+        self.searchTerm = settings.persistState ? (settings.lastSearchTerm ?? "") : ""
+        self.replaceTerm = settings.persistState ? (settings.lastReplaceTerm ?? "") : ""
+    }
 
     var items: [RenameItem] { engine.items }
     var itemsToRename: Int { items.filter { $0.status == .shouldRename }.count }
@@ -89,6 +106,8 @@ final class AppViewModel {
             let pairs = try await engine.executeRename()
             lastRenamePairs = pairs
             renameCompleted = true
+            settings.pushSearchMRU(searchTerm)
+            settings.pushReplaceMRU(replaceTerm)
         } catch {
             errorMessage = error.localizedDescription
         }

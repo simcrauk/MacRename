@@ -7,26 +7,32 @@ struct StatusBar: View {
     var body: some View {
         HStack {
             if viewModel.totalItems > 0 {
-                Text("\(viewModel.totalItems) item(s)")
-                    .foregroundStyle(.secondary)
-
-                if viewModel.itemsToRename > 0 {
-                    Text("·")
-                        .foregroundStyle(.quaternary)
-                    Text("\(viewModel.itemsToRename) to rename")
-                        .foregroundStyle(.blue)
-                }
-
                 let errors = viewModel.items.filter {
                     $0.status == .invalidCharacters || $0.status == .filenameTooLong
                     || $0.status == .pathTooLong || $0.status == .nameAlreadyExists
                 }.count
-                if errors > 0 {
-                    Text("·")
-                        .foregroundStyle(.quaternary)
-                    Text("\(errors) error(s)")
-                        .foregroundStyle(.red)
+
+                HStack(spacing: 6) {
+                    Text("\(viewModel.totalItems) item(s)")
+                        .foregroundStyle(.secondary)
+
+                    if viewModel.itemsToRename > 0 {
+                        Text("·").foregroundStyle(.quaternary)
+                        Text("\(viewModel.itemsToRename) to rename")
+                            .foregroundStyle(.blue)
+                    }
+
+                    if errors > 0 {
+                        Text("·").foregroundStyle(.quaternary)
+                        Text("\(errors) error(s)")
+                            .foregroundStyle(.red)
+                    }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(
+                    "\(viewModel.totalItems) items, \(viewModel.itemsToRename) to rename"
+                    + (errors > 0 ? ", \(errors) errors" : "")
+                )
             }
 
             Spacer()
@@ -35,6 +41,7 @@ struct StatusBar: View {
                 ProgressView()
                     .controlSize(.small)
                     .padding(.trailing, 4)
+                    .accessibilityLabel("Renaming in progress")
             }
 
             if viewModel.renameCompleted {

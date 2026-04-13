@@ -8,27 +8,46 @@ struct SearchReplaceBar: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 TextField("Search for...", text: $viewModel.searchTerm)
                     .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("Search pattern")
+
+                MRUMenu(
+                    entries: viewModel.settings.searchMRU,
+                    label: "Recent searches",
+                    onSelect: { viewModel.searchTerm = $0 }
+                )
 
                 Toggle("Aa", isOn: $viewModel.caseSensitive)
                     .toggleStyle(.button)
                     .help("Case sensitive")
+                    .accessibilityLabel("Case sensitive")
 
                 Toggle(".*", isOn: $viewModel.useRegex)
                     .toggleStyle(.button)
                     .help("Use regular expressions")
+                    .accessibilityLabel("Regular expressions")
 
                 Toggle("All", isOn: $viewModel.matchAll)
                     .toggleStyle(.button)
                     .help("Match all occurrences")
+                    .accessibilityLabel("Match all occurrences")
             }
 
             HStack {
                 Image(systemName: "arrow.right")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 TextField("Replace with...", text: $viewModel.replaceTerm)
                     .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("Replacement pattern")
+
+                MRUMenu(
+                    entries: viewModel.settings.replaceMRU,
+                    label: "Recent replacements",
+                    onSelect: { viewModel.replaceTerm = $0 }
+                )
 
                 TokenMenu(viewModel: viewModel)
             }
@@ -89,5 +108,28 @@ struct TokenMenu: View {
 
     private func insertToken(_ token: String) {
         viewModel.replaceTerm += token
+    }
+}
+
+struct MRUMenu: View {
+    let entries: [String]
+    let label: String
+    let onSelect: (String) -> Void
+
+    var body: some View {
+        Menu {
+            if entries.isEmpty {
+                Text("No recent entries").foregroundStyle(.secondary)
+            } else {
+                ForEach(entries, id: \.self) { entry in
+                    Button(entry) { onSelect(entry) }
+                }
+            }
+        } label: {
+            Image(systemName: "clock.arrow.circlepath")
+                .help(label)
+        }
+        .disabled(entries.isEmpty)
+        .accessibilityLabel(label)
     }
 }

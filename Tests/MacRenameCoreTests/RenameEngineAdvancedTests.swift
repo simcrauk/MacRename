@@ -34,6 +34,50 @@ final class RenameEngineAdvancedTests: XCTestCase {
         XCTAssertEqual(item.newName, "my_cool_file.txt")
     }
 
+    // MARK: - PowerRename Spec Parity
+
+    /// Enumeration counter must advance per match, not per change.
+    /// Mirrors PowerRename's VerifyCounterIncrementsWhenResultIsUnchanged.
+    func testEnumerationCounterAdvancesOnUnchangedResult() async {
+        let engine = RenameEngine()
+        engine.searchTerm = "(.*)"
+        engine.replaceTerm = "NewFile-${start=1}"
+        engine.flags = [.useRegex, .enumerate]
+
+        // Item #3 already has the name the counter would produce for index 2.
+        engine.items = [
+            RenameItem(url: URL(fileURLWithPath: "/tmp/DocA"), isFolder: false, depth: 0),
+            RenameItem(url: URL(fileURLWithPath: "/tmp/DocB"), isFolder: false, depth: 0),
+            RenameItem(url: URL(fileURLWithPath: "/tmp/NewFile-3"), isFolder: false, depth: 0),
+            RenameItem(url: URL(fileURLWithPath: "/tmp/DocC"), isFolder: false, depth: 0),
+        ]
+
+        await engine.computePreview()
+
+        XCTAssertEqual(engine.items[0].newName, "NewFile-1")
+        XCTAssertEqual(engine.items[1].newName, "NewFile-2")
+        XCTAssertEqual(engine.items[2].status, .unchanged)
+        XCTAssertEqual(engine.items[3].newName, "NewFile-4",
+                       "Counter must still advance past the unchanged item.")
+    }
+
+    /// Non-breaking space (U+00A0) in a filename is folded to regular space
+    /// so copy-pasted search terms match. Mirrors PowerRename's
+    /// VerifyUnicodeAndWhitespaceNormalization.
+    func testNonBreakingSpaceNormalization() async {
+        let engine = RenameEngine()
+        engine.searchTerm = "Hello World"
+        engine.replaceTerm = "Match"
+
+        let nbsp = "Hello\u{00A0}World.txt"
+        let item = RenameItem(url: URL(fileURLWithPath: "/tmp/\(nbsp)"), isFolder: false, depth: 0)
+        engine.items = [item]
+
+        await engine.computePreview()
+
+        XCTAssertEqual(item.newName, "Match.txt")
+    }
+
     // MARK: - Folder Tests
 
     func testFolderRename() async {

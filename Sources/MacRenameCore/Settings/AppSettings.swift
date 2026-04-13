@@ -41,4 +41,34 @@ public final class AppSettings {
         get { defaults.string(forKey: "lastReplaceTerm") }
         set { defaults.set(newValue, forKey: "lastReplaceTerm") }
     }
+
+    /// Most-recently-used search terms, newest first.
+    public var searchMRU: [String] {
+        get { defaults.stringArray(forKey: "searchMRU") ?? [] }
+        set { defaults.set(newValue, forKey: "searchMRU") }
+    }
+
+    /// Most-recently-used replace terms, newest first.
+    public var replaceMRU: [String] {
+        get { defaults.stringArray(forKey: "replaceMRU") ?? [] }
+        set { defaults.set(newValue, forKey: "replaceMRU") }
+    }
+
+    /// Pushes an entry to the front of the MRU list, dedup-ing and capping at `maxMRUSize`.
+    public func pushSearchMRU(_ term: String) {
+        guard !term.isEmpty else { return }
+        searchMRU = prepend(term, to: searchMRU)
+    }
+
+    public func pushReplaceMRU(_ term: String) {
+        guard !term.isEmpty else { return }
+        replaceMRU = prepend(term, to: replaceMRU)
+    }
+
+    private func prepend(_ term: String, to list: [String]) -> [String] {
+        var next = list.filter { $0 != term }
+        next.insert(term, at: 0)
+        if next.count > maxMRUSize { next.removeLast(next.count - maxMRUSize) }
+        return next
+    }
 }

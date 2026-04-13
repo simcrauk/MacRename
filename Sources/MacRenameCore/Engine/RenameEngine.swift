@@ -142,6 +142,13 @@ public final class RenameEngine: @unchecked Sendable {
             flags: flags
         )
 
+        // The enumeration counter advances per match, not per visible change.
+        // This keeps `(.*) → NewFile-${start=1}` producing distinct indices even
+        // when one of the files already matches the target name.
+        if result.matched {
+            enumIndex += 1
+        }
+
         var newName = result.output
 
         // 4. If no match but text transform is active, apply transform to source
@@ -180,11 +187,6 @@ public final class RenameEngine: @unchecked Sendable {
 
         item.newName = computedName
         item.status = validationStatus
-
-        // 10. Increment enum index if match was found
-        if result.matched {
-            enumIndex += 1
-        }
     }
 
     // MARK: - File Operations

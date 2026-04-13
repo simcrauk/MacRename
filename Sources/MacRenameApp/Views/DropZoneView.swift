@@ -10,6 +10,7 @@ struct DropZoneView: View {
             Image(systemName: "arrow.down.doc.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
 
             Text("Drop files or folders here")
                 .font(.title3)
@@ -17,6 +18,7 @@ struct DropZoneView: View {
 
             Text("or")
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
 
             Button("Choose Files...") {
                 viewModel.openFilePanel()
@@ -27,5 +29,7 @@ struct DropZoneView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Drop zone. Drop files or folders here, or use the Choose Files button.")
     }
 }
