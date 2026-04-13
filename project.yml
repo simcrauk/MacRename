@@ -28,6 +28,8 @@ targets:
       - path: Sources/MacRenameApp
         excludes:
           - Info.plist
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
     dependencies:
       - package: MacRenameCore
         product: MacRenameCore

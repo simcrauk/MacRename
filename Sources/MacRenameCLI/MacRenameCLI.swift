@@ -137,7 +137,7 @@ struct Preview: AsyncParsableCommand {
                 print("\(item.originalName) ✗ path too long")
             case .excluded:
                 break // silently skip
-            case .unchanged, .initial, .nameAlreadyExists:
+            case .unchanged, .initial, .nameAlreadyExists, .renamed:
                 break
             }
         }

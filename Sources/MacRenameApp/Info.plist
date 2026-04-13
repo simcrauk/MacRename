@@ -22,6 +22,10 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Simon Craig. All rights reserved.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

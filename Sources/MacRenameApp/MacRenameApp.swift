@@ -22,6 +22,11 @@ struct MacRenameApp: App {
                 }
         }
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About MacRename") {
+                    NSApp.orderFrontStandardAboutPanel(options: aboutPanelOptions())
+                }
+            }
             CommandGroup(after: .newItem) {
                 Button("Open Files...") {
                     viewModel.openFilePanel()
@@ -40,5 +45,46 @@ struct MacRenameApp: App {
                 .keyboardShortcut("d", modifiers: [.command, .shift])
             }
         }
+    }
+
+    private func aboutPanelOptions() -> [NSApplication.AboutPanelOptionKey: Any] {
+        let credits = NSMutableAttributedString()
+        let regular = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        let bold = NSFont.boldSystemFont(ofSize: NSFont.smallSystemFontSize)
+        let center = NSMutableParagraphStyle()
+        center.alignment = .center
+
+        credits.append(NSAttributedString(
+            string: "Designed by ",
+            attributes: [.font: regular, .paragraphStyle: center,
+                         .foregroundColor: NSColor.labelColor]
+        ))
+        credits.append(NSAttributedString(
+            string: "Simon Craig",
+            attributes: [.font: bold, .paragraphStyle: center,
+                         .foregroundColor: NSColor.labelColor]
+        ))
+        credits.append(NSAttributedString(
+            string: "\n\nCode written by ",
+            attributes: [.font: regular, .paragraphStyle: center,
+                         .foregroundColor: NSColor.labelColor]
+        ))
+        credits.append(NSAttributedString(
+            string: "Claude",
+            attributes: [.font: bold, .paragraphStyle: center,
+                         .foregroundColor: NSColor.labelColor]
+        ))
+        credits.append(NSAttributedString(
+            string: " (Anthropic Claude Opus 4.6)\n\nA macOS port of PowerToys PowerRename.",
+            attributes: [.font: regular, .paragraphStyle: center,
+                         .foregroundColor: NSColor.secondaryLabelColor]
+        ))
+
+        return [
+            .applicationName: "MacRename",
+            .applicationVersion: "0.1.0",
+            .credits: credits,
+            .init(rawValue: "Copyright"): "© 2026 Simon Craig",
+        ]
     }
 }

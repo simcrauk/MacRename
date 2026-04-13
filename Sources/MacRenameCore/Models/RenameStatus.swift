@@ -18,4 +18,6 @@ public enum RenameStatus: Sendable, Equatable {
     case excluded
     /// No change — new name equals original name.
     case unchanged
+    /// The item was successfully renamed on disk.
+    case renamed
 }

@@ -9,7 +9,7 @@ struct FileListView: View {
             TableColumn("") { item in
                 Toggle("", isOn: Binding(
                     get: { item.isSelected },
-                    set: { item.isSelected = $0 }
+                    set: { viewModel.setSelected(item, $0) }
                 ))
                 .labelsHidden()
                 .accessibilityLabel("Include \(item.originalName)")
@@ -44,11 +44,18 @@ struct FileListView: View {
 struct FileRowNewName: View {
     let item: RenameItem
 
+    private var colorForStatus: Color {
+        switch item.status {
+        case .shouldRename, .renamed: return .primary
+        default: return .red
+        }
+    }
+
     var body: some View {
         if let newName = item.newName {
             Text(newName)
                 .lineLimit(1)
-                .foregroundColor(item.status == .shouldRename ? .primary : .red)
+                .foregroundColor(colorForStatus)
                 .accessibilityLabel("New name: \(newName)")
         } else {
             Text("—")
@@ -64,7 +71,11 @@ struct StatusBadge: View {
     var body: some View {
         switch status {
         case .shouldRename:
-            Label("Rename", systemImage: "checkmark.circle.fill")
+            Label("Rename", systemImage: "checkmark.circle")
+                .foregroundStyle(.blue)
+                .font(.system(size: 11))
+        case .renamed:
+            Label("Renamed", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .font(.system(size: 11))
         case .invalidCharacters:

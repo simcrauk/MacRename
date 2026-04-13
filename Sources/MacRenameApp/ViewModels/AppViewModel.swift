@@ -83,6 +83,13 @@ final class AppViewModel {
         errorMessage = nil
     }
 
+    /// Toggle whether an item participates in the rename. Re-runs the preview
+    /// so the "to rename" count and excluded statuses update immediately.
+    func setSelected(_ item: RenameItem, _ selected: Bool) {
+        item.isSelected = selected
+        schedulePreview()
+    }
+
     func openFilePanel() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
@@ -106,6 +113,12 @@ final class AppViewModel {
             let pairs = try await engine.executeRename()
             lastRenamePairs = pairs
             renameCompleted = true
+            // Mark renamed items so the list shows a terminal "Renamed" badge
+            // instead of still advertising them as pending.
+            let renamedSources = Set(pairs.map { $0.source })
+            for item in engine.items where renamedSources.contains(item.url) {
+                item.status = .renamed
+            }
             settings.pushSearchMRU(searchTerm)
             settings.pushReplaceMRU(replaceTerm)
         } catch {

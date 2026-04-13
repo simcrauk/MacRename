@@ -32,8 +32,10 @@ public final class RenameEngine: @unchecked Sendable {
     /// Computes new names for all items based on current search/replace/flags.
     /// This is the "regex phase" — no files are modified.
     public func computePreview() async {
-        // Reset all items
-        for item in items {
+        // Reset all items except those already renamed on disk — resetting those
+        // would cause the next rename pass to try to move files that no longer
+        // exist at the original URL.
+        for item in items where item.status != .renamed {
             item.reset()
         }
 
@@ -42,6 +44,8 @@ public final class RenameEngine: @unchecked Sendable {
         var enumIndex = 0
 
         for item in items {
+            if item.status == .renamed { continue }
+
             let shouldProcess = shouldProcessItem(item)
 
             if !shouldProcess {
