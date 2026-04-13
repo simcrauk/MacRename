@@ -8,6 +8,7 @@ DerivedData/
 .claude/
 PowerToys/
 APP_STORE.md
+.vscode/
 *.xcodeproj
 *.xcworkspace
 !.swiftpm/**/*.xcworkspace
