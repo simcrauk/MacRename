@@ -5,6 +5,9 @@ import MacRenameCore
 struct URLSchemeHandler {
 
     /// Parses a `macrename://open?files=...` URL and returns file URLs.
+    /// Only accepts `file://` entries — a malicious caller (e.g. a webpage
+    /// invoking the URL scheme) cannot smuggle in `http://` or other schemes
+    /// that would later resolve to unexpected destinations.
     static func parseURLScheme(_ url: URL) -> [URL]? {
         guard url.scheme == "macrename",
               url.host == "open" else { return nil }
@@ -14,8 +17,10 @@ struct URLSchemeHandler {
             return nil
         }
 
-        let fileURLStrings = filesParam.components(separatedBy: ",")
-        let urls = fileURLStrings.compactMap { URL(string: $0) }
+        let urls = filesParam
+            .components(separatedBy: ",")
+            .compactMap { URL(string: $0) }
+            .filter { $0.isFileURL && $0.scheme == "file" }
 
         return urls.isEmpty ? nil : urls
     }

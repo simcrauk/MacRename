@@ -61,39 +61,36 @@ public final class RenameEngine: @unchecked Sendable {
     }
 
     /// Marks items as `.nameAlreadyExists` if multiple items in the same
-    /// directory would end up with the same new name.
+    /// directory would end up with the same new name. Comparison is
+    /// case-insensitive to match the default APFS/HFS+ behavior — `Photo.jpg`
+    /// and `photo.jpg` collide on a stock macOS volume.
     private func detectDuplicates() {
         // Group items by parent directory
         var byDirectory: [String: [RenameItem]] = [:]
         for item in items where item.status == .shouldRename {
-            let dir = item.parentPath
-            byDirectory[dir, default: []].append(item)
+            byDirectory[item.parentPath, default: []].append(item)
         }
 
-        for (_, dirItems) in byDirectory {
-            var seen: [String: Int] = [:]
-            // Also count existing files that aren't being renamed
-            for item in items where item.status != .shouldRename && !item.isSelected {
-                seen[item.originalName, default: 0] += 1
-            }
-
-            for item in dirItems {
-                guard let newName = item.newName else { continue }
-                let key = newName.lowercased() // macOS filesystem is case-insensitive by default
-                seen[key, default: 0] += 1
-                if seen[key]! > 1 {
-                    item.status = .nameAlreadyExists
-                }
-            }
-
-            // Second pass: mark the first occurrence too if duplicates exist
+        for (directory, dirItems) in byDirectory {
+            // Count names already taken in this directory by items that
+            // aren't being renamed: existing files (not in our list) and
+            // items the user excluded or unselected.
             var counts: [String: Int] = [:]
+            for item in items
+                where item.parentPath == directory
+                && (item.status != .shouldRename || !item.isSelected) {
+                counts[item.originalName.lowercased(), default: 0] += 1
+            }
+
+            // Add the proposed new names from items in this directory.
             for item in dirItems {
                 guard let newName = item.newName else { continue }
-                let key = newName.lowercased()
-                counts[key, default: 0] += 1
+                counts[newName.lowercased(), default: 0] += 1
             }
-            for item in dirItems where item.status == .shouldRename {
+
+            // Any item whose target name has count > 1 is colliding — either
+            // with another rename in the batch or with an existing file.
+            for item in dirItems {
                 guard let newName = item.newName else { continue }
                 if (counts[newName.lowercased()] ?? 0) > 1 {
                     item.status = .nameAlreadyExists

@@ -122,12 +122,73 @@ final class RenameEngineAdvancedTests: XCTestCase {
 
         await engine.computePreview()
 
-        // Both would become "file.txt" — should detect collision
+        // Both would become "file.txt" — every participant should be flagged
+        // (so the user fixes the collision rather than seeing only one error).
         XCTAssertEqual(item1.newName, "file.txt")
         XCTAssertEqual(item2.newName, "file.txt")
-        // At least one should be marked as duplicate
-        let duplicates = engine.items.filter { $0.status == .nameAlreadyExists }
-        XCTAssertGreaterThanOrEqual(duplicates.count, 1)
+        XCTAssertEqual(item1.status, .nameAlreadyExists)
+        XCTAssertEqual(item2.status, .nameAlreadyExists)
+    }
+
+    func testDuplicateDetectionIsCaseInsensitive() async {
+        // Default APFS/HFS+ volumes are case-insensitive, so a rename whose
+        // target differs only in case from an existing file must still be
+        // flagged as colliding.
+        let engine = RenameEngine()
+        engine.searchTerm = "draft"
+        engine.replaceTerm = "Photo"
+
+        // Existing file with a capital-P name, not selected for renaming.
+        let existing = RenameItem(url: URL(fileURLWithPath: "/tmp/Photo.jpg"), isFolder: false, depth: 0)
+        existing.isSelected = false
+        // File being renamed; the regex turns "draft.jpg" → "Photo.jpg" but
+        // we'll engineer the case mismatch by lowercasing the replacement.
+        let renaming = RenameItem(url: URL(fileURLWithPath: "/tmp/draft.jpg"), isFolder: false, depth: 0)
+        engine.replaceTerm = "photo" // produces "photo.jpg"
+        engine.items = [existing, renaming]
+
+        await engine.computePreview()
+
+        XCTAssertEqual(renaming.newName, "photo.jpg")
+        XCTAssertEqual(renaming.status, .nameAlreadyExists,
+                       "case-only difference vs an existing file must be flagged on case-insensitive volumes")
+    }
+
+    func testDuplicatesAcrossDirectoriesAreIgnored() async {
+        // Two files with identical proposed names but in different parent
+        // directories must NOT be flagged — the case-insensitive collision
+        // rule only applies within a single directory.
+        let engine = RenameEngine()
+        engine.searchTerm = "\\d+"
+        engine.replaceTerm = ""
+        engine.flags = [.useRegex, .matchAll]
+
+        let item1 = RenameItem(url: URL(fileURLWithPath: "/tmp/a/file1.txt"), isFolder: false, depth: 0)
+        let item2 = RenameItem(url: URL(fileURLWithPath: "/tmp/b/file1.txt"), isFolder: false, depth: 0)
+        engine.items = [item1, item2]
+
+        await engine.computePreview()
+
+        XCTAssertEqual(item1.status, .shouldRename)
+        XCTAssertEqual(item2.status, .shouldRename)
+    }
+
+    func testCollisionWithDeselectedItem() async {
+        // A renamed item targeting the same name as an unselected sibling
+        // (which won't be renamed and so keeps that name) must be flagged.
+        let engine = RenameEngine()
+        engine.searchTerm = "old"
+        engine.replaceTerm = "new"
+
+        let renaming = RenameItem(url: URL(fileURLWithPath: "/tmp/old.txt"), isFolder: false, depth: 0)
+        let blocker = RenameItem(url: URL(fileURLWithPath: "/tmp/new.txt"), isFolder: false, depth: 0)
+        blocker.isSelected = false
+        engine.items = [renaming, blocker]
+
+        await engine.computePreview()
+
+        XCTAssertEqual(renaming.newName, "new.txt")
+        XCTAssertEqual(renaming.status, .nameAlreadyExists)
     }
 
     // MARK: - Transform Without Match
