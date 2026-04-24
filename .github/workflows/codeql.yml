@@ -1,0 +1,45 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze (swift)
+    runs-on: macos-15
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: |
+          sudo xcode-select -switch /Applications/Xcode_16.app || \
+          sudo xcode-select -switch /Applications/Xcode.app
+          swift --version
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: swift
+
+      # Skip autobuild; it calls `swift build` with no target scoping and picks
+      # up whatever toolchain is first on PATH. Build only the analyzable SPM
+      # targets — MacRenameApp is meant to build via Xcode (see CLAUDE.md).
+      - name: Build Core + CLI
+        run: |
+          swift build --target MacRenameCore
+          swift build --target MacRenameCLI
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:swift"
