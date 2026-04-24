@@ -29,6 +29,33 @@ final class FileValidatorTests: XCTestCase {
         XCTAssertEqual(status, .filenameTooLong)
     }
 
+    func testDotInvalid() {
+        let status = FileValidator.validate(newName: ".", parentPath: "/tmp", isFolder: false)
+        XCTAssertEqual(status, .invalidCharacters)
+    }
+
+    func testDotDotInvalid() {
+        let status = FileValidator.validate(newName: "..", parentPath: "/tmp", isFolder: false)
+        XCTAssertEqual(status, .invalidCharacters)
+    }
+
+    func testPathTraversalRejected() {
+        // Already covered by `/` rejection, but pin the behavior so a future
+        // refactor that loosens the slash rule can't reopen the hole.
+        let status = FileValidator.validate(newName: "../../etc/passwd", parentPath: "/tmp", isFolder: false)
+        XCTAssertEqual(status, .invalidCharacters)
+    }
+
+    func testNullByteRejected() {
+        let status = FileValidator.validate(newName: "evil\u{0}.txt", parentPath: "/tmp", isFolder: false)
+        XCTAssertEqual(status, .invalidCharacters)
+    }
+
+    func testControlCharRejected() {
+        let status = FileValidator.validate(newName: "file\u{1}name", parentPath: "/tmp", isFolder: false)
+        XCTAssertEqual(status, .invalidCharacters)
+    }
+
     func testTrimWhitespace() {
         let result = FileValidator.trimFilename("  hello world  ")
         XCTAssertEqual(result, "hello world")

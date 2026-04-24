@@ -16,6 +16,13 @@ public enum FileEnumerator {
 
         for url in urls {
             let standardized = url.standardizedFileURL
+
+            // Skip symlinks: we don't want to rename the link itself (and
+            // surprise the user) or follow it into an unexpected directory.
+            if isSymlink(standardized) {
+                continue
+            }
+
             var isDir: ObjCBool = false
 
             guard fm.fileExists(atPath: standardized.path, isDirectory: &isDir) else {
@@ -65,7 +72,7 @@ public enum FileEnumerator {
 
         guard let enumerator = fm.enumerator(
             at: directoryURL,
-            includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
+            includingPropertiesForKeys: [.isDirectoryKey, .nameKey, .isSymbolicLinkKey],
             options: [.skipsHiddenFiles]
         ) else {
             return items
@@ -73,8 +80,17 @@ public enum FileEnumerator {
 
         while let itemURL = enumerator.nextObject() as? URL {
             let resourceValues = try? itemURL.resourceValues(
-                forKeys: [.isDirectoryKey]
+                forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
             )
+
+            // Skip symlinks. Renaming a symlink only renames the link, but a
+            // symlink in a user's tree may point anywhere — and if the
+            // enumerator follows it for traversal, we could end up walking
+            // into unexpected territory.
+            if resourceValues?.isSymbolicLink == true {
+                continue
+            }
+
             let isDir = resourceValues?.isDirectory ?? false
 
             // Depth is based on path components relative to the base directory
@@ -86,5 +102,9 @@ public enum FileEnumerator {
         }
 
         return items
+    }
+
+    private static func isSymlink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
     }
 }

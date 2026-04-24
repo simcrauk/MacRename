@@ -33,18 +33,10 @@ public enum MetadataExtractor {
 
         // Top-level TIFF properties
         if let tiff = properties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-            if let make = tiff[kCGImagePropertyTIFFMake as String] as? String {
-                patterns["CAMERA_MAKE"] = make.trimmingCharacters(in: .whitespaces)
-            }
-            if let model = tiff[kCGImagePropertyTIFFModel as String] as? String {
-                patterns["CAMERA_MODEL"] = model.trimmingCharacters(in: .whitespaces)
-            }
-            if let artist = tiff[kCGImagePropertyTIFFArtist as String] as? String {
-                patterns["AUTHOR"] = artist
-            }
-            if let copyright = tiff[kCGImagePropertyTIFFCopyright as String] as? String {
-                patterns["COPYRIGHT"] = copyright
-            }
+            setSanitized(&patterns, "CAMERA_MAKE", tiff[kCGImagePropertyTIFFMake as String] as? String)
+            setSanitized(&patterns, "CAMERA_MODEL", tiff[kCGImagePropertyTIFFModel as String] as? String)
+            setSanitized(&patterns, "AUTHOR", tiff[kCGImagePropertyTIFFArtist as String] as? String)
+            setSanitized(&patterns, "COPYRIGHT", tiff[kCGImagePropertyTIFFCopyright as String] as? String)
             if let orientation = tiff[kCGImagePropertyTIFFOrientation as String] {
                 patterns["ORIENTATION"] = "\(orientation)"
             }
@@ -77,9 +69,7 @@ public enum MetadataExtractor {
             if let colorSpace = exif[kCGImagePropertyExifColorSpace as String] as? Int {
                 patterns["COLOR_SPACE"] = colorSpace == 1 ? "sRGB" : "\(colorSpace)"
             }
-            if let lens = exif[kCGImagePropertyExifLensModel as String] as? String {
-                patterns["LENS"] = lens
-            }
+            setSanitized(&patterns, "LENS", exif[kCGImagePropertyExifLensModel as String] as? String)
 
             // Date taken
             if let dateStr = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String {
@@ -124,34 +114,24 @@ public enum MetadataExtractor {
 
         // IPTC often contains XMP-equivalent fields
         if let iptc = properties[kCGImagePropertyIPTCDictionary as String] as? [String: Any] {
-            if let creator = iptc[kCGImagePropertyIPTCCreatorContactInfo as String] as? String {
-                patterns["CREATOR"] = creator
-            }
-            if let rights = iptc[kCGImagePropertyIPTCRightsUsageTerms as String] as? String {
-                patterns["RIGHTS"] = rights
-            }
-            if let title = iptc[kCGImagePropertyIPTCObjectName as String] as? String {
-                patterns["TITLE"] = title
-            }
-            if let description = iptc[kCGImagePropertyIPTCCaptionAbstract as String] as? String {
-                patterns["DESCRIPTION"] = description
-            }
+            setSanitized(&patterns, "CREATOR", iptc[kCGImagePropertyIPTCCreatorContactInfo as String] as? String)
+            setSanitized(&patterns, "RIGHTS", iptc[kCGImagePropertyIPTCRightsUsageTerms as String] as? String)
+            setSanitized(&patterns, "TITLE", iptc[kCGImagePropertyIPTCObjectName as String] as? String)
+            setSanitized(&patterns, "DESCRIPTION", iptc[kCGImagePropertyIPTCCaptionAbstract as String] as? String)
             if let keywords = iptc[kCGImagePropertyIPTCKeywords as String] as? [String] {
-                patterns["SUBJECT"] = keywords.joined(separator: ", ")
+                setSanitized(&patterns, "SUBJECT", keywords.joined(separator: ", "))
             }
         }
 
         // TIFF for creator tool
         if let tiff = properties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-            if let software = tiff[kCGImagePropertyTIFFSoftware as String] as? String {
-                patterns["CREATOR_TOOL"] = software
-            }
+            setSanitized(&patterns, "CREATOR_TOOL", tiff[kCGImagePropertyTIFFSoftware as String] as? String)
             // Reuse author/copyright from TIFF if not already set
-            if patterns["AUTHOR"] == nil, let artist = tiff[kCGImagePropertyTIFFArtist as String] as? String {
-                patterns["AUTHOR"] = artist
+            if patterns["AUTHOR"] == nil {
+                setSanitized(&patterns, "AUTHOR", tiff[kCGImagePropertyTIFFArtist as String] as? String)
             }
-            if patterns["COPYRIGHT"] == nil, let copyright = tiff[kCGImagePropertyTIFFCopyright as String] as? String {
-                patterns["COPYRIGHT"] = copyright
+            if patterns["COPYRIGHT"] == nil {
+                setSanitized(&patterns, "COPYRIGHT", tiff[kCGImagePropertyTIFFCopyright as String] as? String)
             }
         }
 
@@ -195,5 +175,41 @@ public enum MetadataExtractor {
                 patterns["\(prefix)_SS"] = String(timeComponents[2])
             }
         }
+    }
+
+    // MARK: - Sanitization
+
+    /// Sanitizes an attacker-controlled metadata string for safe inclusion in
+    /// a filename. EXIF/IPTC/XMP fields can contain anything — including path
+    /// separators (`/`, `:`), NUL bytes, or control characters — so we strip
+    /// them here before they flow into a `$TOKEN` substitution and end up in
+    /// the new filename. The validator catches these too, but doing it at
+    /// extraction time means the rename succeeds with a clean value instead
+    /// of failing at preview.
+    static func sanitize(_ value: String) -> String? {
+        let cleaned = value.unicodeScalars.filter { scalar in
+            // Drop control chars (incl. NUL), and macOS-invalid filename chars.
+            scalar.value >= 0x20
+                && scalar.value != 0x7F
+                && scalar != "/"
+                && scalar != ":"
+        }
+        let result = String(String.UnicodeScalarView(cleaned))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Reject pure-dot or empty values — these are path-traversal components.
+        if result.isEmpty || result.allSatisfy({ $0 == "." }) {
+            return nil
+        }
+        return result
+    }
+
+    private static func setSanitized(
+        _ patterns: inout [String: String],
+        _ key: String,
+        _ value: String?
+    ) {
+        guard let value, let cleaned = sanitize(value) else { return }
+        patterns[key] = cleaned
     }
 }

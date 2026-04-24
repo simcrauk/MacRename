@@ -24,6 +24,20 @@ public enum FileValidator {
             return .invalidCharacters
         }
 
+        // Reject NUL and other control characters — POSIX disallows NUL in
+        // paths, and control chars produce filenames that misbehave in shells
+        // and confuse downstream tools.
+        if newName.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) {
+            return .invalidCharacters
+        }
+
+        // Reject path-traversal components. A regex replacement or metadata
+        // token could produce ".." or ".", which when appended to the parent
+        // URL would escape the intended directory.
+        if newName == "." || newName == ".." {
+            return .invalidCharacters
+        }
+
         // Check for empty name
         if newName.isEmpty {
             return .invalidCharacters
